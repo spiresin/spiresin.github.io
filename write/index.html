@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#e0564a">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/fonts/lxgw/lxgw-screen.css">
+<title>写日记 · 罐罐人生</title>
+<style>
+  :root{ --red:#e0564a; --bg:#fdfcf9; --card:#fff; --line:rgba(0,0,0,.09); --txt:#33302e; --sub:#9a918b; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg); color:var(--txt);
+    font:16px/1.7 "LXGW WenKai Screen","LXGW WenKai",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+    padding:0 14px calc(30px + env(safe-area-inset-bottom));
+  }
+  .wrap{ max-width:640px; margin:0 auto; }
+  header{
+    display:flex; align-items:baseline; gap:8px;
+    padding:calc(14px + env(safe-area-inset-top)) 2px 12px;
+  }
+  header h1{ font-size:19px; margin:0; letter-spacing:1px; }
+  header span{ font-size:12px; color:var(--sub); }
+  header .cfg{ margin-left:auto; }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:12px;
+  }
+  .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  label.lb{ font-size:13px; color:var(--sub); margin-right:2px; }
+  input[type=date], input[type=password], input[type=text]{
+    font:inherit; font-size:15px; color:var(--txt);
+    border:1px solid var(--line); border-radius:9px; padding:6px 10px; background:#fff;
+  }
+  .chip{
+    border:1px solid var(--line); background:#fff; color:var(--txt);
+    border-radius:999px; padding:5px 12px; font-size:13px; cursor:pointer;
+  }
+  .chip:active{ background:#f2efe9; }
+  textarea{
+    width:100%; min-height:190px; border:0; outline:0; resize:vertical;
+    font:inherit; line-height:1.8; color:var(--txt); background:transparent; padding:2px;
+  }
+  textarea::placeholder{ color:#c3bcb4; }
+  .hint{ font-size:12px; color:var(--sub); }
+  .imgs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .imgs .it{ position:relative; }
+  .imgs img{ width:74px; height:74px; object-fit:cover; border-radius:9px; display:block; }
+  .imgs .del{
+    position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%;
+    border:0; background:rgba(0,0,0,.62); color:#fff; font-size:14px; line-height:22px; padding:0; cursor:pointer;
+  }
+  .pick{
+    width:74px; height:74px; border:1px dashed var(--line); border-radius:9px;
+    display:flex; align-items:center; justify-content:center; font-size:24px; color:#c3bcb4; cursor:pointer;
+  }
+  .btns{ display:flex; gap:10px; margin:14px 0 6px; }
+  button.main{
+    flex:1; border:0; border-radius:12px; padding:13px 0; font:inherit; font-size:16px; font-weight:600;
+    background:var(--red); color:#fff; cursor:pointer;
+  }
+  button.main:disabled{ opacity:.5; }
+  button.ghost{
+    border:1px solid var(--line); background:#fff; color:var(--sub);
+    border-radius:12px; padding:13px 16px; font:inherit; font-size:15px; cursor:pointer;
+  }
+  .status{ font-size:14px; margin:8px 2px 0; min-height:22px; }
+  .status.ok{ color:#2e9e6b; }
+  .status.err{ color:var(--red); }
+  .recent{ display:flex; flex-wrap:wrap; gap:6px; }
+  .recent .d{
+    font-size:12px; color:var(--sub); border:1px solid var(--line);
+    border-radius:999px; padding:3px 9px;
+  }
+  .moodrow{ display:flex; flex-wrap:wrap; gap:6px; }
+  .moodchip{
+    font:inherit; font-size:19px; line-height:1; cursor:pointer;
+    border:1px solid transparent; border-radius:9px; padding:4px 7px; background:transparent;
+  }
+  .moodchip.sel{ border-color:var(--red); background:#fdf0ee; }
+  .moodchip:active{ transform:scale(.92); }
+  footer{ text-align:center; font-size:12px; color:#c3bcb4; margin-top:18px; }
+  footer a{ color:var(--sub); cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>写点什么</h1><span>罐罐人生</span>
+    <a class="cfg hint" id="cfgLink">令牌设置</a>
+  </header>
+
+  <div class="card" id="tokenCard" style="display:none">
+    <div class="hint" style="margin-bottom:6px">粘贴你的 GitHub 令牌（github_pat_ 开头）。只保存在这台设备上，不会上传到别处。</div>
+    <div class="row">
+      <input type="password" id="token" placeholder="github_pat_..." style="flex:1;min-width:0">
+      <button class="chip" id="saveToken">保存</button>
+    </div>
+    <div class="hint" id="tokenMsg" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label class="lb" for="date">日期</label>
+      <input type="date" id="date">
+      <button class="chip" id="btnToday">今天</button>
+      <button class="chip" id="btnYest">昨天</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="lb" for="title">标题</label>
+      <input type="text" id="title" placeholder="可不填；不填时列表自动用正文第一句当标题" style="flex:1;min-width:0">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="lb">心情</label>
+      <div class="moodrow" id="mood"></div>
+      <span class="hint" id="moodHint" style="display:none"><button class="chip" id="moodClear" style="padding:3px 9px">清除</button></span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="lb">BGM</label>
+      <input type="text" id="music" placeholder="粘贴网易云链接、ID 或 App 分享文案（整行也行）" style="flex:1;min-width:0">
+      <button class="chip" id="musicAdd">添加</button>
+    </div>
+    <div class="hint" id="musicHint" style="display:none;margin-top:6px">
+      <span id="musicShow"></span> <button class="chip" id="musicClear" style="padding:3px 9px">清除</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <textarea id="text" placeholder="今天发生了什么？（支持直接粘贴图片，会自动放到文末）"></textarea>
+    <div class="row" style="justify-content:space-between">
+      <span class="hint" id="count">0 字</span>
+    </div>
+    <div class="imgs" id="imgs">
+      <label class="pick" for="file">＋</label>
+    </div>
+    <input type="file" id="file" accept="image/*" multiple style="display:none">
+  </div>
+
+  <div class="btns">
+    <button class="main" id="send">发布</button>
+    <button class="ghost" id="clear">清空</button>
+  </div>
+  <div class="status" id="status"></div>
+
+  <div class="card" id="recentCard" style="display:none">
+    <div class="hint" style="margin-bottom:6px">最近写过的日子</div>
+    <div class="recent" id="recent"></div>
+  </div>
+
+  <footer><a href="/manage">管理历史日记</a> · <a href="/">回罐罐人生</a> · <a id="logout">清除本机令牌</a></footer>
+</div>
+
+<script>
+var OWNER = 'spiresin', REPO = 'mydiary', BRANCH = 'main';
+var API = 'https://api.github.com';
+var imgs = [];
+var $ = function (id) { return document.getElementById(id); };
+
+function todayStr() {
+  var d = new Date();
+  var m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+}
+function shift(days) {
+  var d = new Date(Date.now() - days * 864e5);
+  var m = d.getMonth() + 1, day = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+}
+function getToken() { try { return localStorage.getItem('ghtoken') || ''; } catch (e) { return ''; } }
+function setToken(t) { try { localStorage.setItem('ghtoken', t); } catch (e) {} }
+
+/* ===== 令牌 ===== */
+function showTokenCard(show) { $('tokenCard').style.display = show ? '' : 'none'; }
+$('cfgLink').onclick = function () { $('token').value = getToken(); showTokenCard(true); $('tokenMsg').textContent = ''; };
+$('logout').onclick = function () { setToken(''); showTokenCard(true); say('本机令牌已清除', ''); };
+$('saveToken').onclick = function () {
+  var t = $('token').value.trim();
+  if (!t) { $('tokenMsg').textContent = '先粘贴令牌'; return; }
+  $('tokenMsg').textContent = '正在验证…';
+  gh('GET', '/user', null, t).then(function () {
+    setToken(t);
+    $('tokenMsg').textContent = '';
+    showTokenCard(false);
+    say('令牌已保存', 'ok');
+    loadRecent();
+  }).catch(function (e) {
+    $('tokenMsg').textContent = '令牌无效：' + e.message;
+  });
+};
+
+/* ===== GitHub API（浏览器直连） ===== */
+function gh(method, path, body, token) {
+  var headers = {
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  return fetch(API + path, {
+    method: method,
+    headers: headers,
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function (r) {
+    if (!r.ok) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        var msg = r.status + ' ' + r.statusText + (j && j.message ? ' · ' + j.message : '');
+        var err = new Error(msg);
+        err.status = r.status;
+        throw err;
+      });
+    }
+    return r.json();
+  });
+}
+function listDir(token, dir) {
+  return gh('GET', '/repos/' + OWNER + '/' + REPO + '/contents/' + dir + '?ref=' + BRANCH, null, token)
+    .then(function (a) { return Array.isArray(a) ? a : []; })
+    .catch(function (e) { if (e.status === 404) return []; throw e; });
+}
+function putFile(token, path, contentBase64, message) {
+  return gh('PUT', '/repos/' + OWNER + '/' + REPO + '/contents/' + path, {
+    message: message,
+    content: contentBase64,
+    branch: BRANCH
+  }, token);
+}
+
+/* ===== 页面基础 ===== */
+$('date').value = todayStr();
+$('btnToday').onclick = function () { $('date').value = todayStr(); loadDraft(); };
+$('btnYest').onclick = function () { $('date').value = shift(1); loadDraft(); };
+
+/* ===== 心情角标：选中一个 emoji，发布时写进 front matter（mood: "😊"），可不选 ===== */
+var MOODS = ['😊','😄','🥰','😌','🤔','😢','😤','😴','🌙','🍀'];
+var mood = '';
+function moodKey() { return 'moodday_' + $('date').value; }
+function drawMood() {
+  var box = $('mood');
+  box.innerHTML = '';
+  MOODS.forEach(function (m) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'moodchip' + (m === mood ? ' sel' : '');
+    b.textContent = m;
+    b.title = m === mood ? '点击取消' : '选这个心情';
+    b.onclick = function () { mood = (mood === m ? '' : m); saveMood(); drawMood(); };
+    box.appendChild(b);
+  });
+  $('moodHint').style.display = mood ? '' : 'none';
+}
+function saveMood() {
+  try {
+    if (mood) localStorage.setItem(moodKey(), mood);
+    else localStorage.removeItem(moodKey());
+  } catch (e) {}
+}
+$('moodClear').onclick = function () { mood = ''; saveMood(); drawMood(); };
+
+/* ===== 今日份 BGM：粘贴网易云歌曲链接或直接输入歌曲ID，
+       发布时写进 front matter（music: <id> + music_name: "歌名 - 歌手"），
+       站点会生成音乐名片（点击页内播放）；歌名同时供管理页搜索命中 ===== */
+var musicId = '', musicName = '';
+function musicKey() { return 'musicday_' + $('date').value; }
+function drawMusic() {
+  $('musicHint').style.display = musicId ? '' : 'none';
+  $('musicShow').textContent = musicId
+    ? '🎵 ' + (musicName || ('歌曲 ID ' + musicId + '（取歌名失败？直接输入歌名再点「添加」可补记）'))
+    : '';
+}
+function saveMusic() {
+  try {
+    if (musicId) localStorage.setItem(musicKey(), JSON.stringify({ id: musicId, name: musicName }));
+    else localStorage.removeItem(musicKey());
+  } catch (e) {}
+}
+function extractSongId(input) {
+  input = (input || '').trim();
+  if (/^\d+$/.test(input)) return input;
+  var m = /song\?id=(\d+)/.exec(input) || /song\/(\d+)/.exec(input);
+  return m ? m[1] : '';
+}
+/* App 分享文案里的《歌名》与 163cn.tv 短链 */
+function extractSongName(input) {
+  var m = /《([^《》]{1,80})》/.exec(input || '');
+  return m ? m[1].trim() : '';
+}
+function extractShortCode(input) {
+  var m = /163cn\.tv\/([A-Za-z0-9\-_]+)/.exec(input || '');
+  return m ? m[1] : '';
+}
+/* 带超时的 fetch：超时按失败处理，避免任何一条请求挂起导致「正在解析」永久卡住 */
+function fetchT(url, opts, ms) {
+  var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = null;
+  if (ctl) timer = setTimeout(function () { ctl.abort(); }, ms || 10000);
+  var o = {};
+  if (opts) for (var k in opts) o[k] = opts[k];
+  if (ctl) o.signal = ctl.signal;
+  function done() { if (timer) clearTimeout(timer); }
+  return fetch(url, o).then(
+    function (r) { done(); return r; },
+    function (e) { done(); throw e; }
+  );
+}
+/* 首选：站点自己的 Worker 同源接口（服务端跟随 302 + 抓标题，没有跨域问题） */
+function neteaseApi(params) {
+  return fetchT('/api/netease?' + params, { cache: 'no-store' }, 10000)
+    .then(function (r) { return r.ok ? r.json().catch(function () { return null; }) : null; })
+    .catch(function () { return null; });
+}
+/* 兜底：公共只读代理级联（哪个通用哪个），全失败返回空串 */
+var MUSIC_PROXIES = [
+  function (u) { return 'https://r.jina.ai/' + u; },
+  function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+  function (u) { return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u); }
+];
+function fetchViaProxy(url) {
+  var i = 0;
+  function attempt() {
+    if (i >= MUSIC_PROXIES.length) return Promise.resolve('');
+    var full = MUSIC_PROXIES[i++](url);
+    return fetchT(full, { cache: 'no-store' }, 12000)
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .catch(function () { return ''; })
+      .then(function (t) { return (t && t.length > 40) ? t : attempt(); });
+  }
+  return attempt();
+}
+/* 从代理抓回的页面里解析歌曲 ID 与「歌名 - 歌手」
+   （allorigins/codetabs 返回 HTML 带 <title>；jina 返回 "Title: xxx" 行） */
+function parseSongPage(text) {
+  var id = '';
+  var m = /song\?id=(\d+)/.exec(text) || /song\/(\d+)/.exec(text);
+  if (m) id = m[1];
+  var tm = /<title>([^<]*)<\/title>/i.exec(text);
+  var jm = /^Title:\s*(.+)$/m.exec(text);
+  var t = (tm ? tm[1] : (jm ? jm[1] : '')).trim();
+  t = t.replace(/ - 单曲\s*-\s*网易云音乐.*$/, '').replace(/ - 网易云音乐.*$/, '').trim();
+  var name = (t && t.indexOf(' - ') > 0) ? t : '';
+  return { id: id, name: name };
+}
+/* 按《歌名》搜索（短链解析失败时的兜底） */
+function searchSongByName(name) {
+  return fetchViaProxy('https://music.163.com/api/search/get?s=' + encodeURIComponent(name) + '&type=1&limit=3')
+    .then(function (t) {
+      try {
+        var d = JSON.parse(t);
+        var s = d && d.result && d.result.songs && d.result.songs[0];
+        if (s) return { id: String(s.id), name: s.name + ((s.artists && s.artists[0]) ? ' - ' + s.artists[0].name : '') };
+      } catch (e) {}
+      return null;
+    });
+}
+/* 取不到歌名时的明确提醒 */
+function remindNoSongName(id) {
+  if (musicId === id && !musicName) {
+    $('musicShow').textContent = '🎵 歌曲 ID ' + id + '，没取到歌名。想补歌名的话：直接输入歌名再点一次「添加」即可';
+    $('musicHint').style.display = '';
+  }
+}
+/* 直接 fetch 网易云详情接口（无 CORS 多半失败），失败依次走 Worker 接口、公共代理 */
+function tryFetchNameById(id) {
+  var api = 'https://music.163.com/api/song/detail/?id=' + id + '&ids=%5B' + id + '%5D';
+  fetchT(api, null, 8000)
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .catch(function () { return null; })
+    .then(function (d) {
+      if (d && d.songs && d.songs[0]) return d;
+      return neteaseApi('id=' + id).then(function (w) {
+        if (w && w.id && w.name) return { songs: [{ name: w.name.split(' - ')[0], artists: [{ name: w.name.split(' - ').slice(1).join(' - ') }] }] };
+        return fetchViaProxy(api).then(function (t) {
+          try { return JSON.parse(t); } catch (e) { return null; }
+        });
+      });
+    })
+    .then(function (d) {
+      var s = d && d.songs && d.songs[0];
+      if (s && musicId === id && !musicName) {
+        var a = (s.artists && s.artists[0] && s.artists[0].name) || '';
+        musicName = s.name + (a ? ' - ' + a : '');
+        saveMusic();
+        drawMusic();
+      } else {
+        remindNoSongName(id);
+      }
+    })
+    .catch(function () { remindNoSongName(id); });
+}
+$('musicAdd').onclick = function () {
+  var v = $('music').value.trim();
+  if (!v) return;
+  var show = $('musicShow'), hint = $('musicHint');
+  var name = extractSongName(v);          /* 分享文案里的《歌名》 */
+  hint.style.display = '';
+  function setMusic(id, nm) {
+    musicId = id;
+    musicName = nm || '';
+    saveMusic();
+    drawMusic();
+    $('music').value = '';
+  }
+  /* ① music.163.com / y.music.163.com 链接或纯数字 ID */
+  var id = extractSongId(v);
+  if (id) {
+    setMusic(id, name);
+    if (!name) tryFetchNameById(id);      /* 取不到歌名会自动提醒可补填 */
+    return;
+  }
+  /* ② 网易云 App 分享的 163cn.tv 短链（整行分享文案直接粘贴） */
+  var code = extractShortCode(v);
+  if (code) {
+    show.textContent = '正在解析 163cn.tv 短链接…';
+    neteaseApi('code=' + encodeURIComponent(code)).then(function (w) {
+      if (w && w.id) { setMusic(w.id, name || w.name); if (!musicName) tryFetchNameById(w.id); return; }
+      /* Worker 没通：走公共代理，再不行按《歌名》搜 */
+      return fetchViaProxy('https://163cn.tv/' + code).then(function (t) {
+        var r = parseSongPage(t || '');
+        if (r.id) {
+          setMusic(r.id, name || r.name);
+          if (!musicName) tryFetchNameById(r.id);
+          return;
+        }
+        if (name) {
+          show.textContent = '短链接没解析成功，改用《' + name + '》搜索…';
+          searchSongByName(name).then(function (s) {
+            if (s) setMusic(s.id, s.name);
+            else {
+              show.textContent = '没解析出歌曲。请粘贴 music.163.com/song?id=xxx 链接或纯数字 ID（《' + name + '》这个名字会自动记上）';
+            }
+          });
+          return;
+        }
+        show.textContent = '这条短链接没解析成功。可直接粘贴 music.163.com/song?id=xxx 链接、纯数字 ID，或带《歌名》的完整分享文案';
+      });
+    }).catch(function () {
+      show.textContent = '短链接解析失败（网络异常）。可直接粘贴 music.163.com/song?id=xxx 链接或纯数字 ID';
+    });
+    return;
+  }
+  /* ③ 不是链接/ID：若已选歌曲则当作歌名补记（存进 front matter，可搜索可展示） */
+  if (musicId) {
+    musicName = v.replace(/"/g, "'");
+    saveMusic();
+    drawMusic();
+    $('music').value = '';
+    return;
+  }
+  show.textContent = '没认出歌曲。支持：music.163.com/song?id=xxx 链接、纯数字 ID、网易云 App 的 163cn.tv 短链分享文案（可整行粘贴）';
+};
+$('musicClear').onclick = function () { musicId = ''; musicName = ''; saveMusic(); drawMusic(); };
+
+/* ===== 可选标题：填了就写进 front matter 的 title（列表/内页优先显示）；
+       不填则标题仍是日期，站点列表会自动用正文第一句当展示标题 ===== */
+function titleKey() { return 'titleday_' + $('date').value; }
+$('title').addEventListener('input', function () {
+  try { localStorage.setItem(titleKey(), $('title').value); } catch (e) {}
+});
+
+/* 来自微信/系统的分享内容自动填进来（优先级高于本地草稿） */
+var SHARED = '';
+(function () {
+  var q = new URLSearchParams(location.search);
+  var parts = [];
+  var t = q.get('title') || '';
+  var x = q.get('text') || '';
+  var u = q.get('url') || '';
+  if (t) parts.push(t);
+  if (x) parts.push(x);
+  if (u) parts.push(u);
+  if (parts.length) {
+    SHARED = parts.join('\n\n');
+    $('text').value = SHARED;
+  }
+})();
+
+/* 草稿本地保存，切走 app 也不丢 */
+function draftKey() { return 'draftday_' + $('date').value; }
+function loadDraft() {
+  try { mood = localStorage.getItem(moodKey()) || ''; } catch (e) { mood = ''; }
+  drawMood();
+  try { musicId = ''; musicName = ''; var mv = null; try { mv = JSON.parse(localStorage.getItem(musicKey()) || 'null'); } catch (e) {}
+        if (mv && mv.id) { musicId = String(mv.id); musicName = mv.name || ''; } } catch (e) {}
+  drawMusic();
+  try { $('title').value = localStorage.getItem(titleKey()) || ''; } catch (e) { $('title').value = ''; }
+  if (SHARED) { countIt(); return; }
+  try { $('text').value = localStorage.getItem(draftKey()) || ''; } catch (e) {}
+  countIt();
+  loadImgDraft();
+}
+/* 日期切换（含手动改日期）时，换载对应日期的草稿 */
+$('date').addEventListener('change', loadDraft);
+$('text').addEventListener('input', function () {
+  try { localStorage.setItem(draftKey(), $('text').value); } catch (e) {}
+  countIt();
+});
+function countIt() { $('count').textContent = $('text').value.length + ' 字'; }
+loadDraft();
+
+/* ===== 图片草稿（IndexedDB）：文字草稿在 localStorage，图片体积大走 IDB，刷新不丢 ===== */
+var idbDb = null;
+function idb() {
+  if (idbDb) return Promise.resolve(idbDb);
+  return new Promise(function (res) {
+    try {
+      var rq = indexedDB.open('diarywrite', 1);
+      rq.onupgradeneeded = function () { rq.result.createObjectStore('imgs'); };
+      rq.onsuccess = function () { idbDb = rq.result; res(idbDb); };
+      rq.onerror = function () { res(null); };
+    } catch (e) { res(null); }
+  });
+}
+function saveImgDraft() {
+  var date = $('date').value;
+  idb().then(function (db) {
+    if (!db) return;
+    try {
+      var st = db.transaction('imgs', 'readwrite').objectStore('imgs');
+      if (imgs.length) {
+        st.put(imgs.map(function (im) { return { ext: im.ext, b64: im.b64 }; }), date);
+      } else {
+        st.delete(date);
+      }
+    } catch (e) {}
+  });
+}
+function loadImgDraft() {
+  if (SHARED || imgs.length) return;
+  var date = $('date').value;
+  idb().then(function (db) {
+    if (!db || imgs.length) return;
+    try {
+      var rq = db.transaction('imgs').objectStore('imgs').get(date);
+      rq.onsuccess = function () {
+        if (!rq.result || imgs.length) return;
+        imgs = rq.result.map(function (o) {
+          return {
+            ext: o.ext,
+            b64: o.b64,
+            url: 'data:image/' + (o.ext === 'png' ? 'png' : 'jpeg') + ';base64,' + o.b64
+          };
+        });
+        draw();
+      };
+    } catch (e) {}
+  });
+}
+
+/* ===== 图片 ===== */
+document.addEventListener('paste', function (e) {
+  var items = (e.clipboardData && e.clipboardData.items) || [];
+  var files = [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type && items[i].type.indexOf('image/') === 0) {
+      files.push(items[i].getAsFile());
+    }
+  }
+  if (files.length) addFiles(files);
+});
+$('file').addEventListener('change', function (e) {
+  addFiles(Array.prototype.slice.call(e.target.files || []));
+  e.target.value = '';
+});
+
+function addFiles(list) {
+  list.forEach(function (f) {
+    if (!f) return;
+    var ext = (f.name.split('.').pop() || 'jpg').toLowerCase();
+    if (ext === 'jpeg') ext = 'jpg';
+    if (f.size > 300 * 1024) {
+      shrink(f, function (blob) {
+        if (blob) { ext = 'jpg'; toB64(blob, function (b) { imgs.push({ ext: ext, b64: b, url: URL.createObjectURL(blob) }); draw(); }); }
+        else { toB64(f, function (b) { imgs.push({ ext: ext, b64: b, url: URL.createObjectURL(f) }); draw(); }); }
+      });
+    } else {
+      toB64(f, function (b) { imgs.push({ ext: ext, b64: b, url: URL.createObjectURL(f) }); draw(); });
+    }
+  });
+}
+function shrink(file, cb) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var max = 1600, w = im.width, h = im.height;
+      var s = Math.min(1, max / Math.max(w, h));
+      w = Math.round(w * s); h = Math.round(h * s);
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(im, 0, 0, w, h);
+      c.toBlob(function (b) { cb(b); }, 'image/jpeg', 0.85);
+    };
+    im.onerror = function () { cb(null); };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function toB64(blob, cb) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var s = String(fr.result);
+    cb(s.slice(s.indexOf(',') + 1));
+  };
+  fr.readAsDataURL(blob);
+}
+function draw() {
+  saveImgDraft();   /* 图片每次增删后随手存进 IndexedDB 草稿 */
+  var box = $('imgs');
+  box.innerHTML = '<label class="pick" for="file">＋</label>';
+  imgs.forEach(function (im, i) {
+    var wrap = document.createElement('div');
+    wrap.className = 'it';
+    var img = document.createElement('img');
+    img.src = im.url;
+    var del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '×';
+    del.onclick = function () { imgs.splice(i, 1); draw(); };
+    wrap.appendChild(img);
+    wrap.appendChild(del);
+    box.appendChild(wrap);
+  });
+}
+
+/* ===== 工具 ===== */
+function pad(n, len) {
+  var s = String(n);
+  while (s.length < len) s = '0' + s;
+  return s;
+}
+function cnDate(d) {
+  var p = d.split('-');
+  return p[0] + '年' + parseInt(p[1], 10) + '月' + parseInt(p[2], 10) + '日';
+}
+function nextSerial(names, date, padLen) {
+  var max = 0;
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    if (name.indexOf(date) !== 0) continue;
+    var v = 1;
+    var re = padLen === 2 ? new RegExp('^' + date + '-(\\d{2})\\.') : new RegExp('^' + date + '(?:-(\\d+))?\\.');
+    var m = re.exec(name);
+    if (m) v = parseInt(m[1] || '1', 10);
+    else if (padLen === 2) continue;
+    if (v > max) max = v;
+  }
+  return max + 1;
+}
+function b64enc(str) {
+  var bytes = new TextEncoder().encode(str);
+  var bin = '';
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function say(msg, cls) {
+  var s = $('status');
+  s.textContent = msg;
+  s.className = 'status ' + (cls || '');
+}
+
+$('clear').onclick = function () {
+  $('text').value = ''; $('title').value = ''; imgs = []; draw(); countIt();
+  try { localStorage.removeItem(draftKey()); } catch (e) {}
+  try { localStorage.removeItem(titleKey()); } catch (e) {}
+  try { localStorage.removeItem(moodKey()); } catch (e) {}
+  try { localStorage.removeItem(musicKey()); } catch (e) {}
+  mood = ''; drawMood();
+  musicId = ''; musicName = ''; drawMusic();
+};
+
+/* ===== 发布 ===== */
+$('send').onclick = function () {
+  var token = getToken();
+  if (!token) {
+    showTokenCard(true);
+    $('token').focus();
+    say('先粘贴一次 GitHub 令牌（只存本机）', 'err');
+    return;
+  }
+  var text = $('text').value.trim();
+  var date = $('date').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { say('日期不对', 'err'); return; }
+  if (!text && !imgs.length) { say('写点东西再发吧', 'err'); return; }
+
+  $('send').disabled = true;
+  say('正在读取仓库目录…', '');
+
+  var posts, mediaNames;
+  listDir(token, 'content/posts').then(function (a) {
+    posts = a.map(function (f) { return f.name; });
+    if (!imgs.length) return [];
+    return listDir(token, 'assets/images/assets/media').then(function (m) {
+      mediaNames = m.map(function (f) { return f.name; });
+      return null;
+    });
+  }).then(function () {
+    /* 上传图片：日期-序号，NN 从 01 起 */
+    var uploaded = [];
+    var chain = Promise.resolve();
+    var n = imgs.length ? nextSerial(mediaNames, date, 2) : 1;
+    imgs.forEach(function (im, idx) {
+      chain = chain.then(function () {
+        say('正在上传图片 ' + (idx + 1) + '/' + imgs.length + '…', '');
+        var name = date + '-' + pad(n, 2) + '.' + (im.ext || 'jpg');
+        return putFile(token, 'assets/images/assets/media/' + name, im.b64, '图片 ' + name)
+          .then(function () { uploaded.push('/images/assets/media/' + name); n++; });
+      });
+    });
+    return chain.then(function () { return uploaded; });
+  }).then(function (uploaded) {
+    say('正在提交日记…', '');
+    var content = text;
+    if (uploaded.length) {
+      content = content.replace(/\s+$/, '') + '\n\n' +
+        uploaded.map(function (u) { return '![](' + u + ')'; }).join('\n\n') + '\n';
+    }
+    var k = nextSerial(posts, date, 0);
+    var fname = k === 1 ? date + '.md' : date + '-' + k + '.md';
+    var sec = pad(k - 1, 2);
+    var moodLine = mood ? 'mood: "' + mood + '"\n' : '';
+    var musicLine = musicId ? 'music: ' + musicId + '\n' : '';
+    var musicNameLine = (musicId && musicName) ? 'music_name: "' + musicName.replace(/"/g, "'") + '"\n' : '';
+    var customTitle = $('title').value.trim();
+    var theTitle = (customTitle ? customTitle.replace(/"/g, '\\"') : cnDate(date));
+    var md = '---\ntitle: "' + theTitle + '"\ndate: ' + date + 'T00:00:' + sec +
+      '+08:00\ndraft: false\n' + moodLine + musicLine + musicNameLine + '---\n\n' + content + '\n';
+    return putFile(token, 'content/posts/' + fname, b64enc(md), '日记 ' + theTitle)
+      .then(function () { return { title: theTitle, count: k, imgs: uploaded.length }; });
+  }).then(function (r) {
+    try { localStorage.setItem('ghtoken', token); } catch (e) {}
+    /* 内容已变更：列表页 bfcache 返回时据此自动刷新（否则看到的还是旧内容） */
+    try { localStorage.setItem('diaryContentRev', String(Date.now())); } catch (e) {}
+    try { localStorage.removeItem(draftKey()); } catch (e) {}
+    try { localStorage.removeItem(titleKey()); } catch (e) {}
+    try { localStorage.removeItem(musicKey()); } catch (e) {}
+    musicId = ''; musicName = ''; drawMusic();
+    $('text').value = ''; $('title').value = ''; imgs = []; draw(); countIt();
+    say('发布成功！' + r.title + '（当天第 ' + r.count + ' 篇' +
+      (r.imgs ? '，含图 ' + r.imgs + ' 张' : '') + '）约 1 分钟后自动上线', 'ok');
+    loadRecent();
+  }).catch(function (e) {
+    if (e.status === 401) {
+      showTokenCard(true);
+      say('令牌失效了，请重新粘贴一次', 'err');
+    } else {
+      say('发布失败：' + (e.message || e), 'err');
+    }
+  }).then(function () {
+    $('send').disabled = false;
+  });
+};
+
+/* ===== 最近写过的日子 ===== */
+function loadRecent() {
+  var token = getToken();
+  if (!token) return;
+  listDir(token, 'content/posts').then(function (a) {
+    var map = {};
+    a.forEach(function (f) {
+      var m = /^(\d{4}-\d{2}-\d{2})(?:-\d+)?\.md$/.exec(f.name);
+      if (m) map[m[1]] = (map[m[1]] || 0) + 1;
+    });
+    var list = Object.keys(map).sort().reverse().slice(0, 8);
+    if (!list.length) return;
+    $('recentCard').style.display = '';
+    $('recent').innerHTML = list.map(function (d) {
+      return '<span class="d">' + d + ' · ' + map[d] + '篇</span>';
+    }).join('');
+  }).catch(function () {});
+}
+
+if (getToken()) { showTokenCard(false); loadRecent(); }
+else showTokenCard(true);
+</script>
+</body>
+</html>
