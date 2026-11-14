@@ -1,0 +1,63 @@
+{
+ "title": "直到宇宙尽头",
+ "subtitle": "宇宙にあなたを追いやらせてください。",
+ "author": "Can",
+ "cover": "/novel/cover-front.webp",
+ "back": "/novel/cover-back.webp",
+ "pdfPages": 252,
+ "chapters": [
+  {
+   "title": "序",
+   "page": 3
+  },
+  {
+   "title": "公元2255年10月",
+   "page": 6
+  },
+  {
+   "title": "公元2256年3月",
+   "page": 34
+  },
+  {
+   "title": "公元2256年6月",
+   "page": 58
+  },
+  {
+   "title": "幕间Ⅰ",
+   "page": 84
+  },
+  {
+   "title": "公元2256年8月",
+   "page": 91
+  },
+  {
+   "title": "公元2256年9月",
+   "page": 127
+  },
+  {
+   "title": "幕间Ⅱ",
+   "page": 164
+  },
+  {
+   "title": "公元2256年10月",
+   "page": 178
+  },
+  {
+   "title": "幕间Ⅲ",
+   "page": 210
+  },
+  {
+   "title": "公元2256年11月",
+   "page": 221
+  },
+  {
+   "title": "公元2256年12月",
+   "page": 244
+  },
+  {
+   "title": "作者后记",
+   "page": 250
+  }
+ ],
+ "flap": true
+}
